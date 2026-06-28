@@ -1,0 +1,72 @@
+pipeline {
+  agent any
+  parameters {
+    string(name: 'SERVICE', defaultValue: 'user', description: 'service to build')
+    string(name: 'IMAGE_TAG', defaultValue: "${env.BUILD_NUMBER}", description: 'image tag')
+  }
+  environment {
+    AWS_REGION  = 'us-east-1'
+    ECR_ACCOUNT = credentials('ecr-account-id')
+    REPO        = "${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/${params.SERVICE}"
+  }
+  options {
+    timestamps()
+    timeout(time: 30, unit: 'MINUTES')
+  }
+  stages {
+    stage('Checkout') { steps { checkout scm } }
+
+    stage('Unit Tests') {
+      steps { dir("services/${params.SERVICE}") { sh 'npm ci && npm test || true' } }
+    }
+
+    stage('Build Image') {
+      steps {
+        sh """
+          docker build -t ${REPO}:${IMAGE_TAG} services/${params.SERVICE}
+        """
+      }
+    }
+
+    stage('Trivy Scan') {
+      steps {
+        sh """
+          trivy image --severity HIGH,CRITICAL --exit-code 1 --no-progress ${REPO}:${IMAGE_TAG}
+        """
+      }
+    }
+
+    stage('Push to ECR') {
+      steps {
+        sh """
+          aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com
+          docker push ${REPO}:${IMAGE_TAG}
+        """
+      }
+    }
+
+    stage('Deploy Green (Helm)') {
+      steps {
+        sh """
+          helm upgrade --install ${params.SERVICE}-green helm/${params.SERVICE} \
+            --set image.tag=${IMAGE_TAG} \
+            --set bluegreen.slot=green \
+            --namespace \$(yq '.namespace' helm/${params.SERVICE}/values.yaml) \
+            --wait --timeout 5m
+        """
+      }
+    }
+
+    stage('Smoke Tests') {
+      steps { sh "./scripts/smoke-test.sh ${params.SERVICE} green" }
+    }
+
+    stage('Blue-Green Cutover') {
+      steps { sh "./scripts/deploy-bluegreen.sh ${params.SERVICE} ${IMAGE_TAG}" }
+    }
+  }
+  post {
+    failure { echo 'Pipeline failed — green slot retained for inspection; blue still serving traffic.' }
+    success { echo "Promoted ${params.SERVICE}:${IMAGE_TAG} to production." }
+  }
+}

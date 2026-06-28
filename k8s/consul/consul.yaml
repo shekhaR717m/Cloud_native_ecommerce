@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata: { name: consul }
+---
+# Use upstream Helm chart in real envs:
+#   helm repo add hashicorp https://helm.releases.hashicorp.com
+#   helm install consul hashicorp/consul -n consul --values k8s/consul/values.yaml

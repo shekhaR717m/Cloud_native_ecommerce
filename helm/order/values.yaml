@@ -1,0 +1,21 @@
+image:
+  repository: <ACCOUNT>.dkr.ecr.us-east-1.amazonaws.com/order
+  tag: latest
+  pullPolicy: IfNotPresent
+replicaCount: 2
+namespace: default
+service:
+  port: 3003
+resources:
+  requests: { cpu: 100m, memory: 128Mi }
+  limits:   { cpu: 500m, memory: 512Mi }
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+pdb:
+  enabled: false
+  minAvailable: 1
+bluegreen:
+  slot: blue   # toggled by deploy-bluegreen.sh -> green

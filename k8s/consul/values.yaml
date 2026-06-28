@@ -1,0 +1,10 @@
+global:
+  name: consul
+  datacenter: ecom-prod
+server:
+  replicas: 3
+  bootstrapExpect: 3
+connectInject:
+  enabled: true
+ui:
+  enabled: true

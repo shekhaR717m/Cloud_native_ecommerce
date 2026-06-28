@@ -1,0 +1,26 @@
+groups:
+  - name: slo-burn-rate
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_request_duration_seconds_count{status=~"5.."}[5m])) by (route)
+          /
+          sum(rate(http_request_duration_seconds_count[5m])) by (route) > 0.02
+        for: 5m
+        labels: { severity: page }
+        annotations: { summary: "Error rate >2% on {{ $labels.route }}" }
+
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, route)
+          ) > 0.5
+        for: 10m
+        labels: { severity: page }
+        annotations: { summary: "p95 latency >500ms on {{ $labels.route }}" }
+
+      - alert: PaymentServiceDown
+        expr: up{job="microservices", instance=~"payment.*"} == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations: { summary: "Payment service is down" }

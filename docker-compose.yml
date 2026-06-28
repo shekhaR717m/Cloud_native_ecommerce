@@ -1,0 +1,29 @@
+version: "3.9"
+services:
+  consul:
+    image: hashicorp/consul:1.18
+    command: agent -dev -client=0.0.0.0
+    ports: ["8500:8500"]
+
+  user:         { build: ./services/user,         environment: [CONSUL_HOST=consul, POD_IP=user],         depends_on: [consul] }
+  product:      { build: ./services/product,      environment: [CONSUL_HOST=consul, POD_IP=product],      depends_on: [consul] }
+  order:        { build: ./services/order,        environment: [CONSUL_HOST=consul, POD_IP=order],        depends_on: [consul] }
+  payment:      { build: ./services/payment,      environment: [CONSUL_HOST=consul, POD_IP=payment],      depends_on: [consul] }
+  notification: { build: ./services/notification, environment: [CONSUL_HOST=consul, POD_IP=notification], depends_on: [consul] }
+
+  nginx:
+    image: nginx:1.27-alpine
+    volumes: ["./nginx/nginx.conf:/etc/nginx/nginx.conf:ro"]
+    ports: ["8080:80"]
+    depends_on: [user, product, order, payment, notification]
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    volumes: ["./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro"]
+    ports: ["9090:9090"]
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    ports: ["3000:3000"]
+    environment: [GF_SECURITY_ADMIN_PASSWORD=admin]
+    volumes: ["./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro"]
