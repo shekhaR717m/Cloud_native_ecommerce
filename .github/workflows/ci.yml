@@ -23,7 +23,7 @@ jobs:
         working-directory: services/${{ matrix.service }}
         run: |
           npm ci
-          npm test || true
+          npm test
 
       - name: Build image
         run: docker build -t ${{ matrix.service }}:${{ github.sha }} services/${{ matrix.service }}
@@ -40,11 +40,11 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE }}
-          aws-region: us-east-1
+          aws-region: ap-south-1
 
       - name: Push to ECR
         if: github.event_name == 'push'
         run: |
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_ACCOUNT }}.dkr.ecr.us-east-1.amazonaws.com
-          docker tag  ${{ matrix.service }}:${{ github.sha }} ${{ secrets.ECR_ACCOUNT }}.dkr.ecr.us-east-1.amazonaws.com/${{ matrix.service }}:${{ github.sha }}
-          docker push ${{ secrets.ECR_ACCOUNT }}.dkr.ecr.us-east-1.amazonaws.com/${{ matrix.service }}:${{ github.sha }}
+          aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_ACCOUNT }}.dkr.ecr.ap-south-1.amazonaws.com
+          docker tag  ${{ matrix.service }}:${{ github.sha }} ${{ secrets.ECR_ACCOUNT }}.dkr.ecr.ap-south-1.amazonaws.com/${{ matrix.service }}:${{ github.sha }}
+          docker push ${{ secrets.ECR_ACCOUNT }}.dkr.ecr.ap-south-1.amazonaws.com/${{ matrix.service }}:${{ github.sha }}

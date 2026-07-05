@@ -6,7 +6,6 @@
   "dependencies": {
     "express": "^4.19.2",
     "prom-client": "^15.1.0",
-    "consul": "^1.2.0",
     "pino": "^9.0.0"
   }
 }

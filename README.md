@@ -73,7 +73,7 @@ curl http://localhost:8080/api/products
 cd terraform && terraform init && terraform apply
 
 # 2. Configure kubectl
-aws eks update-kubeconfig --name ecom-prod --region us-east-1
+aws eks update-kubeconfig --name ecom-prod --region ap-south-1
 
 # 3. Install platform components
 kubectl apply -f k8s/consul/

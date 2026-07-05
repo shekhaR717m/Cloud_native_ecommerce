@@ -16,14 +16,24 @@ spec:
         prometheus.io/port: "{{ .Values.service.port }}"
         prometheus.io/path: "/metrics"
     spec:
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
           ports: [{ containerPort: {{ .Values.service.port }} }]
           env:
+            - { name: NODE_ENV, value: "production" }
+            - { name: PORT, value: "{{ .Values.service.port }}" }
             - { name: CONSUL_HOST, value: "consul-server.consul.svc.cluster.local" }
             - { name: POD_IP, valueFrom: { fieldRef: { fieldPath: status.podIP } } }
-          readinessProbe: { httpGet: { path: /ready,  port: {{ .Values.service.port }} }, initialDelaySeconds: 3 }
-          livenessProbe:  { httpGet: { path: /health, port: {{ .Values.service.port }} }, initialDelaySeconds: 10 }
+          readinessProbe: { httpGet: { path: /ready,  port: {{ .Values.service.port }} }, initialDelaySeconds: 3, periodSeconds: 10, failureThreshold: 3 }
+          livenessProbe:  { httpGet: { path: /health, port: {{ .Values.service.port }} }, initialDelaySeconds: 10, periodSeconds: 20, failureThreshold: 3 }
           resources: {{ toYaml .Values.resources | nindent 12 }}

@@ -5,6 +5,7 @@ image:
 replicaCount: 2
 namespace: payment
 service:
+  enabled: true
   port: 3004
 resources:
   requests: { cpu: 100m, memory: 128Mi }

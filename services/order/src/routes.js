@@ -1,8 +1,12 @@
 module.exports = (app) => {
   const orders = new Map();
   app.post('/orders', (req, res) => {
+    const { userId, items } = req.body || {};
+    if (!userId || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'userId and non-empty items are required' });
+    }
     const id = String(orders.size + 1);
-    orders.set(id, { id, status: 'PENDING', ...req.body });
+    orders.set(id, { id, userId, items, status: 'PENDING' });
     res.status(201).json(orders.get(id));
   });
   app.get('/orders/:id', (req, res) => {

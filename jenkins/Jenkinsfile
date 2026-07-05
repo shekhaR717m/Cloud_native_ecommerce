@@ -5,7 +5,7 @@ pipeline {
     string(name: 'IMAGE_TAG', defaultValue: "${env.BUILD_NUMBER}", description: 'image tag')
   }
   environment {
-    AWS_REGION  = 'us-east-1'
+    AWS_REGION  = 'ap-south-1'
     ECR_ACCOUNT = credentials('ecr-account-id')
     REPO        = "${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/${params.SERVICE}"
   }
@@ -17,7 +17,7 @@ pipeline {
     stage('Checkout') { steps { checkout scm } }
 
     stage('Unit Tests') {
-      steps { dir("services/${params.SERVICE}") { sh 'npm ci && npm test || true' } }
+      steps { dir("services/${params.SERVICE}") { sh 'npm ci && npm test' } }
     }
 
     stage('Build Image') {
@@ -45,23 +45,7 @@ pipeline {
       }
     }
 
-    stage('Deploy Green (Helm)') {
-      steps {
-        sh """
-          helm upgrade --install ${params.SERVICE}-green helm/${params.SERVICE} \
-            --set image.tag=${IMAGE_TAG} \
-            --set bluegreen.slot=green \
-            --namespace \$(yq '.namespace' helm/${params.SERVICE}/values.yaml) \
-            --wait --timeout 5m
-        """
-      }
-    }
-
-    stage('Smoke Tests') {
-      steps { sh "./scripts/smoke-test.sh ${params.SERVICE} green" }
-    }
-
-    stage('Blue-Green Cutover') {
+    stage('Blue-Green Deploy') {
       steps { sh "./scripts/deploy-bluegreen.sh ${params.SERVICE} ${IMAGE_TAG}" }
     }
   }

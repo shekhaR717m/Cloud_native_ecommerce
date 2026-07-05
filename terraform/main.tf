@@ -4,9 +4,9 @@ terraform {
     aws = { source = "hashicorp/aws", version = "~> 5.60" }
   }
   backend "s3" {
-    bucket = "ecom-tfstate"
+    bucket = "ecom-tfstate-mayankshez"
     key    = "prod/terraform.tfstate"
-    region = "us-east-1"
+    region = "ap-south-1"
   }
 }
 
@@ -25,7 +25,7 @@ module "eks" {
   subnet_ids   = module.vpc.private_subnet_ids
   node_groups = {
     general = { instance_types = ["t3.large"], min = 2, max = 10, desired = 3 }
-    payment = { instance_types = ["t3.large"], min = 2, max = 4,  desired = 2, taints = [{ key = "workload", value = "payment", effect = "NO_SCHEDULE" }] }
+    payment = { instance_types = ["t3.large"], min = 2, max = 4, desired = 2, taints = [{ key = "workload", value = "payment", effect = "NO_SCHEDULE" }] }
   }
 }
 

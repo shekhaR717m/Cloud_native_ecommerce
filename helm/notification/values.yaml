@@ -5,6 +5,7 @@ image:
 replicaCount: 2
 namespace: default
 service:
+  enabled: true
   port: 3005
 resources:
   requests: { cpu: 100m, memory: 128Mi }
